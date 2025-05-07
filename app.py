@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 app = Flask(__name__)
 
-# Baseline payload structure (you can replace this with your actual decoded baseline)
+# Baseline payload structure (can be expanded as needed)
 BASELINE = {
     "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
         "Sheet1": {},
@@ -15,25 +15,31 @@ BASELINE = {
 
 @app.route("/", methods=["GET"])
 def index():
-    return "Digitol Link Generator is running!"
+    return "Digitol ROI Link Generator is running."
 
 @app.route("/generate", methods=["POST"])
 def generate_link():
     data = request.json
     if not data or "email" not in data:
-        return jsonify({"error": "Missing email field"}), 400
+        return jsonify({"error": "Missing required 'email' field."}), 400
 
-    # Copy baseline and inject user data
-    updated = json.loads(json.dumps(BASELINE))  # deep copy
-    updated["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]["Sheet1"]["A1"] = data["email"]
+    # Start with a copy of the baseline
+    result = json.loads(json.dumps(BASELINE))  # deep copy
 
-    for k, v in data.items():
-        if k == "email":
+    # Always set Sheet1!X1 = 14 to jump to the ROI page
+    sheet1 = result["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]["Sheet1"]
+    sheet1["X1"] = 14
+
+    # Insert email into Sheet1!A1
+    sheet1["A1"] = data["email"]
+
+    # Apply additional user-provided cell values (excluding 'email')
+    for key, value in data.items():
+        if key == "email":
             continue
-        # Assume all input fields are Sheet1 cells by default
-        updated["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]["Sheet1"][k] = v
+        sheet1[key] = value
 
-    # Encode and build URL
-    encoded = base64.b64encode(json.dumps(updated, separators=(',', ':')).encode()).decode()
+    # Encode to base64 and generate the link
+    encoded = base64.b64encode(json.dumps(result, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
     return jsonify({"url": full_url})
