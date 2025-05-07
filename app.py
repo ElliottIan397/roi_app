@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 app = Flask(__name__)
 
-# Full baseline from decoded scenario
+# Full baseline structure
 BASELINE = {
     "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
         "Questionaire": {
@@ -40,11 +40,11 @@ def generate():
     model = json.loads(json.dumps(BASELINE))
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
 
-    # Always set email and navigation
+    # Set email and navigation in Sheet1
     sheets["Sheet1"]["A1"] = data["email"]
     sheets["Sheet1"]["X1"] = 14
 
-    # Inject any submitted values into Sheet1 or Plan A if known
+    # Inject user-submitted values
     for key, value in data.items():
         if key == "email":
             continue
@@ -53,9 +53,9 @@ def generate():
         elif key in sheets["Incremental RS4_Plan A"]:
             sheets["Incremental RS4_Plan A"][key] = value
         else:
-            sheets["Sheet1"][key] = value
+            sheets["Sheet1"][key] = value  # fallback to Sheet1
 
-    # Encode and return URL
+    # Encode and respond
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
     return jsonify({"url": full_url})
