@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 app = Flask(__name__)
 
-# Full baseline structure
+# Baseline model with full structure
 BASELINE = {
     "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
         "Questionaire": {
@@ -21,14 +21,15 @@ BASELINE = {
             "A1": "Ian.Elliott@aegCapitalPartners.com"
         },
         "Incremental RS4_Plan A": {
-            "C130": 0.005, "D124": 0.0015, "C127": 0.005
+            "C130": 0.005, "D124": 0.0015, "C127": 0.005,
+            "BB151": 0, "C252": 0, "C247": 0, "BA147": 0, "BA148": 0
         }
     }
 }
 
 @app.route("/", methods=["GET"])
 def index():
-    return "Digitol ROI Link Generator is online."
+    return "Digitol ROI Link Generator with Summary is online."
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -36,15 +37,11 @@ def generate():
     if not data or "email" not in data:
         return jsonify({"error": "Missing required 'email' field."}), 400
 
-    # Deep copy baseline
-    model = json.loads(json.dumps(BASELINE))
+    model = json.loads(json.dumps(BASELINE))  # deep copy
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
-
-    # Set email and navigation in Sheet1
     sheets["Sheet1"]["A1"] = data["email"]
     sheets["Sheet1"]["X1"] = 14
 
-    # Inject user-submitted values
     for key, value in data.items():
         if key == "email":
             continue
@@ -53,9 +50,25 @@ def generate():
         elif key in sheets["Incremental RS4_Plan A"]:
             sheets["Incremental RS4_Plan A"][key] = value
         else:
-            sheets["Sheet1"][key] = value  # fallback to Sheet1
+            sheets["Sheet1"][key] = value
 
-    # Encode and respond
+    # Extract KPIs
+    plan = sheets["Incremental RS4_Plan A"]
+    kpi_sales = plan.get("BB151", 0)
+    kpi_customers = plan.get("C252", 0)
+    kpi_devices = plan.get("C247", 0)
+    kpi_cabinets = plan.get("BA147", 0)
+    kpi_replacement = plan.get("BA148", 0)
+
+    summary = (
+        f"To achieve a 4-year ROI of ${kpi_sales:,.0f}, you will need to:\n"
+        f"- Install DCA at approximately {int(kpi_customers)} customers\n"
+        f"- Build a hierarchy of {int(kpi_devices)} devices\n"
+        f"- Establish VMI over {int(kpi_cabinets)} supply cabinets\n"
+        f"- Capture {int(kpi_replacement)}% of asset replacement opportunities."
+    )
+
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
-    return jsonify({"url": full_url})
+
+    return jsonify({"url": full_url, "summary": summary})
