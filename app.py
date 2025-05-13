@@ -5,11 +5,11 @@ from urllib.parse import quote
 
 app = Flask(__name__)
 
-# Full baseline structure
+# Baseline model with updated X1 = 26
 BASELINE = {
     "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
         "Questionaire": {
-            "C3": 1, "C7": "Yes", "D8": "EVO-X", "E19": "No", "E20": "Yes", "E21": "Yes", "E22": "Partially",
+            "C3": 1, "C7": "Yes", "D8": "Other", "E19": "No", "E20": "Yes", "E21": "Yes", "E22": "Partially",
             "E23": "No", "E24": "Don't Know", "E25": "Partially", "E26": "Yes", "A19": 5, "F37": "Yes",
             "E39": "No", "E28": "Yes", "F36": "Yes", "E30": "No", "E32": "Yes", "E33": "Yes", "E34": "Yes",
             "E35": "Yes", "F41": "26-50%", "H53": "$251-$500", "F46": "Somewhat", "D48": "Occasionally",
@@ -17,7 +17,7 @@ BASELINE = {
             "D54": "Agree", "D55": "Agree", "D56": "Agree"
         },
         "Sheet1": {
-            "X1": 14, "AN40": "On", "AN46": "On", "AN43": "On", "AN41": "On", "AN45": "On",
+            "X1": 26, "AN40": "On", "AN46": "On", "AN43": "On", "AN41": "On", "AN45": "On",
             "A1": "Ian.Elliott@aegCapitalPartners.com"
         },
         "Incremental RS4_Plan A": {
@@ -28,7 +28,7 @@ BASELINE = {
 
 @app.route("/", methods=["GET"])
 def index():
-    return "Digitol ROI Link Generator is online."
+    return "Digitol ROI Link Generator (Page 26 default) is online."
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -36,15 +36,11 @@ def generate():
     if not data or "email" not in data:
         return jsonify({"error": "Missing required 'email' field."}), 400
 
-    # Deep copy baseline
-    model = json.loads(json.dumps(BASELINE))
+    model = json.loads(json.dumps(BASELINE))  # deep copy
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
-
-    # Set email and navigation in Sheet1
     sheets["Sheet1"]["A1"] = data["email"]
-    sheets["Sheet1"]["X1"] = 14
+    sheets["Sheet1"]["X1"] = 26  # Force calculator to open on summary page
 
-    # Inject user-submitted values
     for key, value in data.items():
         if key == "email":
             continue
@@ -53,9 +49,9 @@ def generate():
         elif key in sheets["Incremental RS4_Plan A"]:
             sheets["Incremental RS4_Plan A"][key] = value
         else:
-            sheets["Sheet1"][key] = value  # fallback to Sheet1
+            sheets["Sheet1"][key] = value
 
-    # Encode and respond
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
+
     return jsonify({"url": full_url})
