@@ -5,8 +5,7 @@ from urllib.parse import quote
 
 app = Flask(__name__)
 
-# Baseline model with updated X1 = 26
-BASELINE = {
+OP_BASELINE = {
     "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
         "Questionaire": {
             "C3": 1, "C7": "Yes", "D8": "Other", "E19": "No", "E20": "Yes", "E21": "Yes", "E22": "Partially",
@@ -18,7 +17,7 @@ BASELINE = {
         },
         "Sheet1": {
             "X1": 26, "AN40": "On", "AN46": "On", "AN43": "On", "AN41": "On", "AN45": "On",
-            "A1": "Ian.Elliott@aegCapitalPartners.com"
+            "A1": ""
         },
         "Incremental RS4_Plan A": {
             "C130": 0.005, "D124": 0.0015, "C127": 0.005
@@ -26,32 +25,55 @@ BASELINE = {
     }
 }
 
+PRINT_BASELINE = {
+    "Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx": {
+        "Questionaire": {
+            "C3": 2, "C7": "No", "M8": "Yes", "M9": "Yes", "M10": "Yes", "J8": 4,
+            "M11": "Yes", "M12": "Yes", "M13": "Yes", "M14": "Yes", "M23": "Yes", "M24": "Yes",
+            "M25": "Yes", "M29": "Yes", "M30": "Yes", "M31": "No"
+        },
+        "Sheet1": {
+            "X1": 26, "AN40": "On", "AN46": "On", "AN43": "On", "AN41": "On", "AN45": "On",
+            "A1": "", "B16": 25, "F48": 1250, "F49": 375
+        },
+        "Incremental RS4_Plan A": {
+            "C130": 0.005, "D124": 0.0005, "C127": 0.005
+        }
+    }
+}
+
 @app.route("/", methods=["GET"])
 def index():
-    return "Digitol ROI Link Generator (Page 26 default) is online."
+    return "Digitol ROI Link Generator (dynamic OP/Print) is online."
 
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.json
-    if not data or "email" not in data:
-        return jsonify({"error": "Missing required 'email' field."}), 400
+    if not data or "email" not in data or "DealerType" not in data:
+        return jsonify({"error": "Missing required 'email' or 'DealerType'."}), 400
 
-    model = json.loads(json.dumps(BASELINE))  # deep copy
+    dealer_type = int(data["DealerType"])
+    if dealer_type == 2:
+        model = json.loads(json.dumps(PRINT_BASELINE))  # Deep copy
+    else:
+        model = json.loads(json.dumps(OP_BASELINE))     # Default to OP
+
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
     sheets["Sheet1"]["A1"] = data["email"]
-    sheets["Sheet1"]["X1"] = 26  # Force calculator to open on summary page
+    sheets["Sheet1"]["X1"] = 26  # Summary page
 
     for key, value in data.items():
-        if key == "email":
+        if key == "email" or key == "DealerType":
             continue
         if key in sheets["Sheet1"]:
             sheets["Sheet1"][key] = value
         elif key in sheets["Incremental RS4_Plan A"]:
             sheets["Incremental RS4_Plan A"][key] = value
         else:
-            sheets["Sheet1"][key] = value
+            sheets["Sheet1"][key] = value  # Fallback
 
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
 
     return jsonify({"url": full_url})
+
