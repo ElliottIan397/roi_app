@@ -54,7 +54,7 @@ def index():
 @app.route("/generate", methods=["POST"])
 def generate():
     data = request.json
-    if not data or "email" not in data or "DealerType" not in data:
+    if not data or "Email" not in data or "DealerType" not in data:
         return jsonify({"error": "Missing required 'email' or 'DealerType'."}), 400
 
     dealer_type = int(data["DealerType"])
@@ -76,7 +76,7 @@ def generate():
         model = json.loads(json.dumps(OP_BASELINE))     # Default to OP
 
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
-    sheets["Sheet1"]["A1"] = data["email"]
+    sheets["Sheet1"]["A1"] = data["Email"]
     sheets["Sheet1"]["X1"] = 26  # Summary page
 
     for key, value in data.items():
