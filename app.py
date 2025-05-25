@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify 
 import base64
 import json
 from urllib.parse import quote
@@ -55,25 +55,34 @@ def generate():
     dealer_type = int(data["DealerType"])
     if dealer_type == 2:
         model = json.loads(json.dumps(PRINT_BASELINE))  # Deep copy
+        # Remap certain variable names for Print Dealers
+        remap = {
+            "E45": "F45",
+            "E46": "F46",
+            "L51": "M51",
+            "L52": "M52"
+        }
+        data = {
+            remap.get(k, k): v for k, v in data.items()
+        }
     else:
-        model = json.loads(json.dumps(OP_BASELINE))     # Default to OP
+        model = json.loads(json.dumps(OP_BASELINE))     # Default to OP Dealer
 
     sheets = model["Digitol Platform License Model Costs Incl 2CLIXZ_2.xlsx"]
     sheets["Sheet1"]["A1"] = data["email"]
-    sheets["Sheet1"]["X1"] = 26  # Summary page
+    sheets["Sheet1"]["X1"] = 26  # Force to summary page
 
     for key, value in data.items():
-        if key == "email" or key == "DealerType":
+        if key in ["email", "DealerType"]:
             continue
         if key in sheets["Sheet1"]:
             sheets["Sheet1"][key] = value
         elif key in sheets["Incremental RS4_Plan A"]:
             sheets["Incremental RS4_Plan A"][key] = value
         else:
-            sheets["Sheet1"][key] = value  # Fallback
+            sheets["Sheet1"][key] = value  # Fallback for other keys
 
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
 
     return jsonify({"url": full_url})
-
