@@ -60,6 +60,16 @@ def generate():
     dealer_type = int(data["DealerType"])
     if dealer_type == 2:
         model = json.loads(json.dumps(PRINT_BASELINE))  # Deep copy
+        # Remap OP-style keys to Print Dealer equivalents
+        remap_keys = {
+            "E45": "F45",
+            "E46": "F46",
+            "L51": "M51",
+            "L52": "M52"
+        }
+        for op_key, print_key in remap_keys.items():
+            if op_key in data:
+                data[print_key] = data.pop(op_key)
     else:
         model = json.loads(json.dumps(OP_BASELINE))     # Default to OP
 
@@ -85,6 +95,9 @@ def generate():
 
     encoded = base64.b64encode(json.dumps(model, separators=(',', ':')).encode()).decode()
     full_url = "https://digitolservices.com/ecommerce-deployment-roi?s=" + quote(encoded)
+
+    return jsonify({"url": full_url})
+
 
     return jsonify({"url": full_url})
 
