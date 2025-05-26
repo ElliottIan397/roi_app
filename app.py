@@ -44,7 +44,7 @@ PRINT_BASELINE = {
 
 NUMERIC_FIELDS = [
     "F45", "F46", "F48", "F49", "M51", "M52", "B15", "B16", "C130", "C127", "D124",
-    "E45", "E46", "L51", "L52"
+    "E45", "E46", "E48", "E49", "L51", "L52"
 ]
 
 @app.route("/", methods=["GET"])
